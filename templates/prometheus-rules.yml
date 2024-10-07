@@ -6,15 +6,15 @@ metadata:
   labels:
     app: prometheus
 data:
-{{- $medium := .Values.alert_timing_medium }}
-{{- $slow := .Values.alert_timing_slow }}
-{{- $fast := .Values.alert_timing_fast }}
+  {{- $medium := .Values.alert_timing_medium }}
+  {{- $slow := .Values.alert_timing_slow }}
+  {{- $fast := .Values.alert_timing_fast }}
 
-{{- range $directory := .Values.ruleFilesDirectory  }}
-  {{- $files := $.Files.Glob (printf "%s/*.yaml" $directory)  }}
-  {{- range $path, $file := $files }}
-    {{ $base := base $path }}
-    {{ $base }}: |
-      {{ $file | toString | replace "${alert_timing_medium}" $medium | replace "${alert_timing_slow}" $slow | replace "${alert_timing_fast}" $fast | nindent 4 }}
+  {{- range $directory := .Values.ruleFilesDirectory  }}
+    {{- $files := $.Files.Glob (printf "%s/*.yaml" $directory)  }}
+    {{- range $path, $file := $files }}
+      {{ $base := base $path }}
+      {{ $base }}: |
+        {{ $file | toString | replace "${alert_timing_medium}" $medium | replace "${alert_timing_slow}" $slow | replace "${alert_timing_fast}" $fast | nindent 8 }}
+    {{- end }}
   {{- end }}
-{{- end }}
