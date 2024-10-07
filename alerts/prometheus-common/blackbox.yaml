@@ -1,0 +1,72 @@
+groups:
+- name: "BlackboxExporter"
+  rules:
+
+  - alert: BlackboxProbeHttpFailure
+    expr: (probe_success == 0) + on (instance) group_right() probe_http_status_code
+    for: ${alert_timing_slow}
+    labels:
+      severity: critical
+      category: service
+    annotations:
+      summary: "Blackbox probe HTTP failure"
+      description: "HTTP status code {{ $value }} for {{ $labels.instance }}"
+      action: "Investigate and repair the service behind the probed endpoint"
+
+  - alert: BlackboxSlowProbe
+    expr: avg_over_time(probe_duration_seconds[1m]) > 5
+    for: ${alert_timing_slow}
+    labels:
+      severity: warning
+      category: service
+    annotations:
+      summary: "Blackbox slow probe"
+      description: |
+        Probing {{ $labels.instance }} took more than {{ printf "%.2f" $value }}s to complete
+      action: "Investigate the service behind the endpoint. Find and resolve the bottleneck that causes the high response latency."
+
+  - alert: BlackboxProbeSlowHttp
+    expr: avg_over_time(probe_http_duration_seconds[1m]) > 5
+    for: ${alert_timing_slow}
+    labels:
+      severity: warning
+      category: service
+    annotations:
+      summary: "Blackbox slow HTTP probe"
+      description: |
+        Probing {{ $labels.instance }} took more than {{ printf "%.2f" $value }}s to complete
+      action: "Investigate the HTTP service behind the endpoint. Find and resolve the bottleneck that causes the high response latency."
+
+  - alert: BlackboxProbeSlowPing
+    expr: avg_over_time(probe_icmp_duration_seconds[1m]) > 5
+    for: ${alert_timing_slow}
+    labels:
+      severity: warning
+      category: service
+    annotations:
+      summary: "Blackbox slow ping probe"
+      description: |
+        Probing {{ $labels.instance }} took more than {{ printf "%.2f" $value }}s to complete
+      action: "Investigate the host behind the endpoint. Find and resolve the bottleneck that causes the high ping latency."
+
+  - alert: BlackboxSslCertificateWillExpireSoon
+    expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 30
+    for: ${alert_timing_fast}
+    labels:
+      severity: warning
+      category: service
+    annotations:
+      summary: "SSL certificate will expire soon"
+      description: "SSL certificate for {{ $labels.instance }} expires in less than 30 days"
+      action: "Renew the SSL certificate and investigate why it was not renewed automatically in time, if applicable."
+
+  - alert: BlackboxSslCertificateExpired
+    expr: probe_ssl_earliest_cert_expiry - time() <= 0
+    for: ${alert_timing_fast}
+    labels:
+      severity: error
+      category: service
+    annotations:
+      summary: "SSL certificate expired"
+      description: "SSL certificate for {{ $labels.instance }} has expired"
+      action: "Renew the SSL certificate and investigate why it was not renewed automatically in time, if applicable."

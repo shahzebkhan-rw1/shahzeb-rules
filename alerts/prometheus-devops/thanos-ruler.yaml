@@ -1,0 +1,149 @@
+groups:
+- name: thanos-rule
+  rules:
+
+  - alert: ThanosRuleQueueIsDroppingAlerts
+    expr: sum by (instance) (rate(thanos_alert_queue_alerts_dropped_total[5m])) > 0
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Thanos Rule is failing to queue alerts.
+      description: "Thanos Rule is failing to queue alerts."
+      action: "Investigate Thanos Ruler logs. Make sure the alertmanager service is running and reachable by Thanos Rule."
+
+  - alert: ThanosRuleSenderIsFailingAlerts
+    expr: sum by (instance) (rate(thanos_alert_sender_alerts_dropped_total[5m])) > 0
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Thanos Rule is failing to send alerts to alertmanager.
+      description: "Thanos Rule is failing to send alerts to alertmanager."
+      action: "Investigate Thanos Rule logs. Make sure the alertmanager service is running and reachable by Thanos Rule."
+
+  - alert: ThanosRuleHighRuleEvaluationFailures
+    expr: |
+      (
+          sum by (instance) (rate(prometheus_rule_evaluation_failures_total{kubernetes_service="thanos-ruler"}[5m]))
+        / sum by (instance) (rate(prometheus_rule_evaluations_total{kubernetes_service="thanos-ruler"}[5m]))
+      ) * 100 > 5
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Thanos Rule is failing to evaluate rules.
+      description: "Thanos Rule is failing to evaluate rules."
+      action: "Investigate Thanos Rule logs. Make sure it can connect to Thanos Query. If only specific alert rules fail, fix the affected rule queries."
+
+  - alert: ThanosRuleHighRuleEvaluationWarnings
+    expr: sum by (instance) (rate(thanos_rule_evaluation_with_warnings_total[5m])) > 0
+    for: ${alert_timing_fast}
+    labels:
+      severity: info
+      category: shared-services
+    annotations:
+      summary: Thanos Rule has high number of evaluation warnings.
+      description: "Thanos Rule has high number of evaluation warnings."
+      action: "Investigate Thanos Rule logs. Fix the alert rule definitions that cause the warnings."
+
+  - alert: ThanosRuleRuleEvaluationLatencyHigh
+    expr: |
+      sum by (instance, rule_group) (prometheus_rule_group_last_duration_seconds{kubernetes_service="thanos-ruler"})
+      >
+      sum by (instance, rule_group) (prometheus_rule_group_interval_seconds{kubernetes_service="thanos-ruler"})
+    for: ${alert_timing_fast}
+    labels:
+      severity: warning
+      category: shared-services
+    annotations:
+      summary: Thanos Rule has high rule evaluation latency.
+      description: "Thanos Rule has higher evaluation latency than interval for rule group '{{$labels.rule_group}}'."
+      action: "Find the cause of the high evaluation latency. Check logs and resource consumption. Consider increasing resource limits. Otherwise, increase the rule evaluation interval to compensate for the high latency."
+
+  - alert: ThanosRuleGrpcErrorRate
+    expr: |
+      (
+          sum by (instance) (rate(grpc_server_handled_total{grpc_code=~"Unknown|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded", kubernetes_service="thanos-ruler"}[5m]))
+        / sum by (instance) (rate(grpc_server_started_total{kubernetes_service="thanos-ruler"}[5m]))
+      ) * 100 > 5
+    for: ${alert_timing_fast}
+    labels:
+      severity: warning
+      category: shared-services
+    annotations:
+      summary: Thanos Rule is failing to handle grpc requests
+      description: "Thanos Rule is failing to handle {{printf \"%.2f\" $value}}% of requests."
+      action: "Look at the Thanos Rule logs, investigate and resolve the reason for the failed requests"
+
+  - alert: ThanosRuleConfigReloadFailure
+    expr: avg by (instance) (thanos_rule_config_last_reload_successful) != 1
+    for: ${alert_timing_fast}
+    labels:
+      severity: info
+      category: shared-services
+    annotations:
+      summary: Thanos Rule has not been able to reload configuration
+      description: "Thanos Rule has not been able to reload its configuration."
+      action: "Check the logs and fix issues in the configuration file."
+
+  - alert: ThanosRuleQueryHighDNSFailures
+    expr: |
+      (
+          sum by (instance) (rate(thanos_rule_query_apis_dns_failures_total[5m]))
+        / sum by (instance) (rate(thanos_rule_query_apis_dns_lookups_total[5m]))
+      ) * 100 > 1
+    for: ${alert_timing_fast}
+    labels:
+      severity: warning
+      category: shared-services
+    annotations:
+      summary: Thanos Rule is having high number of DNS failures.
+      description: "Thanos Rule has {{printf \"%.2f\" $value}}% of failing DNS queries for query endpoints."
+      action: "Look at the Thanos Ruler logs and status page, find the domains that cannot be resolved. Investigate DNS resolution and check whether the respective Kubernetes service resources have correct endpoints associated."
+
+  - alert: ThanosRuleAlertmanagerHighDNSFailures
+    expr: |
+      (
+          sum by (instance) (rate(thanos_rule_alertmanagers_dns_failures_total[5m]))
+        / sum by (instance) (rate(thanos_rule_alertmanagers_dns_lookups_total[5m]))
+      ) * 100 > 1
+    for: ${alert_timing_fast}
+    labels:
+      severity: warning
+      category: shared-services
+    annotations:
+      summary: Thanos Rule is having high number of DNS failures.
+      description: "Thanos Rule has {{printf \"%.2f\" $value}}% of failing DNS queries for Alertmanager endpoints."
+      action: "Look at the Thanos Ruler logs and status page, find the domains that cannot be resolved. Investigate DNS resolution and check whether the respective Kubernetes service resources have correct endpoints associated."
+
+  - alert: ThanosRuleNoEvaluationFor10Intervals
+    expr: |
+      time() -  max by (instance, group) (prometheus_rule_group_last_evaluation_timestamp_seconds{kubernetes_service="thanos-ruler"})
+      >
+      (10 * max by (instance, group) (prometheus_rule_group_interval_seconds{kubernetes_service="thanos-ruler"}))
+    for: ${alert_timing_fast}
+    labels:
+      severity: info
+      category: shared-services
+    annotations:
+      summary: Thanos Rule has rule groups that did not evaluate for 10 intervals.
+      description: "Thanos Rule has {{printf \"%.2f\" $value}}% rule groups that did not evaluate for at least 10x of their expected interval."
+      action: "Check the logs and investigate the reason for the missing rule evaluations."
+
+  - alert: ThanosNoRuleEvaluations
+    expr: |
+      sum by (instance) (rate(prometheus_rule_evaluations_total{kubernetes_service="thanos-ruler"}[5m])) <= 0
+      and
+      sum by (instance) (thanos_rule_loaded_rules) > 0
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Thanos Rule did not perform any rule evaluations.
+      description: "Thanos Rule did not perform any rule evaluations in the past 10 minutes."
+      action: "Check the logs and investigate the reason for the missing rule evaluations."

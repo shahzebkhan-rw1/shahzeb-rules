@@ -1,0 +1,19 @@
+groups:
+- name: "LokiTest"
+  rules:
+  # This alert is used to trigger a test alert from Loki on purpose
+  # Can be triggered with the following command (creates a pod named busybox, that outputs the alert phrase repeatedly):
+  # kubectl run busybox --image=busybox --restart=Never -- sh -c 'while true; do sleep 2; echo "please trigger a loki test alert"; done'
+  # Delete afterwards with: kubectl delete pod busybox
+
+  - alert: LokiRulerTest
+    expr: |
+      rate({pod="busybox"} |= "please trigger a loki test alert" [1m]) > 0.1
+    for: 1m
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Test alert from Loki Ruler
+      description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} in environment {{ $labels.environment }} has output the test alert trigger message."
+      action: "To stop this test alert, remove the pod listed in the description."
