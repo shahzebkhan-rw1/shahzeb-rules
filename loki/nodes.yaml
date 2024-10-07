@@ -5,7 +5,7 @@ groups:
 
   - alert: HostOutOfMemory
     expr: (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}
-    for: ${alert_timing_medium}
+    for: 0m
     labels:
       severity: warning
       category: infra
@@ -16,7 +16,7 @@ groups:
 
   - alert: HostOutOfDiskSpace
     expr: ((node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}
-    for: ${alert_timing_fast}
+    for: 0m
     labels:
       severity: warning
       category: infra
@@ -27,7 +27,7 @@ groups:
 
   - alert: HostHighCpuLoad
     expr: (sum by (instance) (avg by (mode, instance) (rate(node_cpu_seconds_total{mode!="idle"}[2m]))) > 0.8) * on(instance) group_left (nodename) node_uname_info{nodename=~".+"}
-    for: ${alert_timing_medium}
+    for: 0m
     labels:
       severity: warning
       category: infra
