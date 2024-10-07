@@ -8,8 +8,11 @@ metadata:
 data:
 {{- $ruleFilesDirectory := .Values.ruleFilesDirectory }}
 {{- $files := .Files.Glob (printf "%s/*.yaml" $ruleFilesDirectory) }}
+{{- $medium := .Values.alert_timing_medium }}
+{{- $slow := .Values.alert_timing_slow }}
+{{- $fast := .Values.alert_timing_fast }}
 {{- range $path, $file := $files }}
   {{ $base := base $path }}
   {{ $base }}: |
-    {{ $file | toString | nindent 4 }}
+    {{ $file | toString | replace " ${alert_timing_medium}" $medium | replace " ${alert_timing_slow}" $slow | replace " ${alert_timing_fast}" $fast | nindent 4  }}
 {{- end }}

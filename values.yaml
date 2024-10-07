@@ -1,2 +1,5 @@
-ruleFilesDirectory: "loki"
+ruleFilesDirectory: "alerts/prometheus-common"
 namespace: shahzeb-test
+alert_timing_medium: 10m
+alert_timing_slow: 15m
+alert_timing_fast: 5m
