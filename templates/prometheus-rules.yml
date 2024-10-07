@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: prometheus
+data:
+{{- $ruleFilesDirectory := .Values.ruleFilesDirectory }}
+{{- $files := .Files.Glob (printf "%s/*.yaml" $ruleFilesDirectory) }}
+{{- range $path, $file := $files }}
+  {{ $base := base $path }}
+  {{ $base }}: |
+    {{ $file | toString | nindent 4 }}
+{{- end }}
