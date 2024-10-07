@@ -14,5 +14,5 @@ data:
 {{- range $path, $file := $files }}
   {{ $base := base $path }}
   {{ $base }}: |
-    {{ $file | toString | replace " ${alert_timing_medium}" $medium | replace " ${alert_timing_slow}" $slow | replace " ${alert_timing_fast}" $fast | nindent 4  }}
+    {{ $file | toString | replace "${alert_timing_medium}" $medium | replace "${alert_timing_slow}" $slow | replace "${alert_timing_fast}"  $fast | nindent 4  }}
 {{- end }}
