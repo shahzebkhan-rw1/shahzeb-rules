@@ -2,14 +2,14 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   namespace: {{ .Values.namespace }}
-  generateName: presync-job
+  generateName: postsync-job
   annotations:
     argocd.argoproj.io/hook: PostSync
 spec:
   template:
     spec:
       containers:
-        - name: presync-job
+        - name: postsync-job
           image: curlimages/curl:latest  # Use a lightweight curl image
           command: ["/bin/sh", "-c"]
           args:
