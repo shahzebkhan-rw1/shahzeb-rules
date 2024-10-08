@@ -1,5 +1,4 @@
 ruleFilesDirectory:
-- alerts/loki
 - alerts/thanos
 namespace: shahzeb-test
 alertConfigName: prometheus-rules
