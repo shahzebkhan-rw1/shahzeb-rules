@@ -3,8 +3,6 @@ kind: ConfigMap
 metadata:
   name: {{ .Values.alertConfigName }}
   namespace: {{ .Values.namespace }}
-  labels:
-    app: prometheus
 data:
   {{- $medium := .Values.alert_timing_medium }}
   {{- $slow := .Values.alert_timing_slow }}
