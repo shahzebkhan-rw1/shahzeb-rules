@@ -1,0 +1,18 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  namespace: {{ .Values.namespace }}
+  generateName: presync-job
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+spec:
+  template:
+    spec:
+      containers:
+        - name: presync-job
+          image: curlimages/curl:latest  # Use a lightweight curl image
+          command: ["/bin/sh", "-c"]
+          args:
+            - >
+              curl -X POST http://prometheus-service.shahzeb-test:9090/-/reload -v
+      restartPolicy: Never  # Ensure the Job doesn't restart automatically
