@@ -31,8 +31,12 @@ spec:
       containers:
         - name: postsync-job
           image: curlimages/curl:latest  # Use a lightweight curl image
-          command: ["/bin/sh", "-c"]
-          args:
-            - >
+          command: 
+            - /bin/bash
+            - -c
+            - |
+              curl --version
+              echo "*******************************************************************************************************************************************"
               curl -X POST http://prometheus-service.shahzeb-test:9090/-/reload -v
+          
       restartPolicy: Never  # Ensure the Job doesn't restart automatically
