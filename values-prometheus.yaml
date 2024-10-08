@@ -1,6 +1,5 @@
 ruleFilesDirectory:
 - alerts/standalone
-- alerts/loki
 namespace: shahzeb-test
 alertConfigName: prometheus-rules
 alert_timing_medium: 10m
