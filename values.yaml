@@ -1,5 +1,4 @@
 ruleFilesDirectory:
-- alerts/prometheus-common
 - alerts/thanos
 - alerts/standalone
 namespace: shahzeb-test
