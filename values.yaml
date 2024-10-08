@@ -1,6 +1,5 @@
 ruleFilesDirectory:
 - alerts/prometheus-common
-- alerts/loki
 - alerts/thanos
 namespace: shahzeb-test
 alert_timing_medium: 10m
