@@ -32,8 +32,6 @@ spec:
         - name: postsync-job
           image: curlimages/curl:latest  # Use a lightweight curl image
           command: 
-            - /bin/bash
-            - -c
             - |
               curl --version
               echo "*******************************************************************************************************************************************"
