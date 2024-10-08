@@ -1,4 +1,6 @@
 ruleFilesDirectory:
+- alerts/prometheus-common
+- alerts/loki
 - alerts/thanos
 namespace: shahzeb-test
 alertConfigName: prometheus-rules
