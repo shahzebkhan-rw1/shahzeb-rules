@@ -12,6 +12,7 @@ groups:
       summary: "Blackbox probe HTTP failure"
       description: "HTTP status code {{ $value }} for {{ $labels.instance }}"
       action: "Investigate and repair the service behind the probed endpoint"
+      grafana_dashboard: "http://localhost:54045/d/on-call-production/production-on-call-overview-generated"
 
   - alert: BlackboxSlowProbe
     expr: avg_over_time(probe_duration_seconds[1m]) > 5
