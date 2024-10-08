@@ -4,7 +4,7 @@ metadata:
   namespace: {{ .Values.namespace }}
   generateName: postsync-job
   annotations:
-    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook: Sync
 spec:
   template:
     spec:
