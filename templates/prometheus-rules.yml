@@ -43,7 +43,7 @@ spec:
               echo "*******************************************************************************************************************************************"
               curl --version
               echo "*******************************************************************************************************************************************"
-              sleep 30
-              curl --retry 5 --retry-delay 10 -X POST http://prometheus-service.shahzeb-test.svc:9090/-/reload -v
+              sleep 10
+              curl --retry 3 --retry-delay 5 -X POST http://prometheus-service.shahzeb-test.svc:9090/-/reload -v
           
       restartPolicy: Never  # Ensure the Job doesn't restart automatically
