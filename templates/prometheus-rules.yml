@@ -25,8 +25,7 @@ kind: Job
 metadata:
   name: postsync-job
   annotations:
-    argocd.argoproj.io/hook: PostSync
-    argocd.argoproj.io/hook-delete-policy: Hook-Succeeded
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   template:
     spec:
