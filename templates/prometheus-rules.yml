@@ -40,5 +40,5 @@ spec:
             - |
               echo "Waiting for 10 seconds to ensure ConfigMap is applied..."
               sleep 10
-              curl --retry 5 --retry-delay 10 -X POST http://prometheus-service.shahzeb-test.svc:9090/-/reload -v
+              curl -X POST http://prometheus-service.shahzeb-test.svc:9090/-/reload -v
       restartPolicy: Never
