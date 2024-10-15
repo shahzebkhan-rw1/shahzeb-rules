@@ -1,0 +1,307 @@
+# Source: https://samber.github.io/awesome-prometheus-alerts/rules#prometheus-self-monitoring-1
+groups:
+- name: "Prometheus"
+  rules:
+
+  - alert: PrometheusJobMissing
+    expr: absent(up{job="prometheus"})
+    for: ${alert_timing_medium}
+    labels:
+      severity: warning
+      category: shared-services
+    annotations:
+      summary: Prometheus stopped scraping itself
+      description: "There should be at least one active scrape job for scraping the Prometheus server itself."
+      action: "Check the Prometheus scrape configuration, look in Prometheus' logs and status page for errors."
+
+  # Label some core Kubernetes exporters as category=infra
+  - alert: PrometheusInfraTargetMissing
+    expr: up{job =~ "kubernetes-apiserver|kubernetes-nodes|kubernetes-cadvisor"} == 0
+    for: ${alert_timing_medium}
+    labels:
+      severity: critical
+      category: infra
+    annotations:
+      summary: Prometheus scrape target down
+      description: "A Prometheus target has disappeared. An exporter might be crashed or not reachable."
+      action: "Investigate why the affected target cannot be scraped. Check Prometheus' logs and status page, and try to access the exporter URL manually."
+
+  # Label our own VMs as category=service (build-vms are not included since they are frequently shut down and unreachable)
+  - alert: PrometheusServiceTargetMissing
+    expr: up{job =~ "rabbitmq-vm|nginx-vm"} == 0
+    for: ${alert_timing_medium}
+    labels:
+      severity: critical
+      category: service
+    annotations:
+      summary: Prometheus scrape target down
+      description: "A Prometheus target has disappeared. An exporter might be crashed or not reachable."
+      action: "Investigate why the affected target cannot be scraped. Check Prometheus' logs and status page, and try to access the exporter URL manually."
+
+  # Label all other scrape targets as category=shared-services
+  # Most of these are part of the monitoring platform. Kubernetes services/pods can potentially be services, but we cannot differentiate that here.
+  # This includes: prometheus, alertmanager, kubernetes-service-endpoints, kubernetes-pods, azure.*, blackbox.*
+  - alert: PrometheusSharedTargetMissing
+    expr: up{job !~ "build-vms|kubernetes-apiserver|kubernetes-nodes|kubernetes-cadvisor|standalone|rabbitmq-vm|nginx-vm", controller_kind != "DaemonSet"} == 0
+    for: ${alert_timing_medium}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Prometheus scrape target down
+      description: "A Prometheus target has disappeared. An exporter might be crashed or not reachable."
+      action: "Investigate why the affected target cannot be scraped. Check Prometheus' logs and status page, and try to access the exporter URL manually."
+
+  # build-vms are excluded since they are frequently shut down and not reachable
+  - alert: PrometheusAllTargetsMissing
+    expr: sum by (job) (up{job != "build-vms"}) == 0
+    for: ${alert_timing_medium}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: All scrape targets missing for a Prometheus job
+      description: "Every Prometheus job should have at least one scrape target, but this one seems to be void of any exporters. They might be misconfigured, crashed, or not reachable."
+      action: "Investigate Prometheus' service discovery configuration, look for errors in the logs and the Prometheus status page."
+
+  - alert: PrometheusConfigurationReloadFailure
+    expr: prometheus_config_last_reload_successful != 1
+    for: ${alert_timing_fast}
+    labels:
+      severity: warning
+      category: shared-services
+    annotations:
+      summary: Prometheus configuration reload failure
+      description: "Prometheus failed to load its configuration, it is likely corrupt or missing."
+      action: "Make sure Prometheus receives a valid configuration. Look for errors in the Prometheus logs."
+
+  - alert: PrometheusTooManyRestarts
+    expr: changes(process_start_time_seconds{job=~"prometheus|pushgateway|alertmanager"}[15m]) > 2
+    for: ${alert_timing_medium}
+    labels:
+      severity: warning
+      category: shared-services
+    annotations:
+      summary: Prometheus too many restarts
+      description: "Prometheus has restarted more than twice in the last 15 minutes. It might be crashlooping."
+      action: "Investigate the reason for the Prometheus restarts. Aside of configuration and Pod scheduling issues, one common error is that it runs out of memory - if this continues happening, either reduce the complexity of executed queries, or increase Prometheus' resources."
+
+  - alert: PrometheusAlertmanagerJobMissing
+    expr: absent(up{job="alertmanager"})
+    for: ${alert_timing_fast}
+    labels:
+      severity: warning
+      category: shared-services
+    annotations:
+      summary: Prometheus stopped scraping the AlertManager
+      description: "There should be at least one active scrape job for scraping the AlertManager server."
+      action: "Make sure that Prometheus has a scrape job for the alertmanager. If the configuration is correct, investigate if the AlertManager is running and reachable from Prometheus."
+
+  - alert: PrometheusAlertmanagerConfigurationReloadFailure
+    expr: alertmanager_config_last_reload_successful != 1
+    for: ${alert_timing_fast}
+    labels:
+      severity: warning
+      category: shared-services
+    annotations:
+      summary: Prometheus AlertManager configuration reload failure
+      description: "The AlertManager failed to reload its configuration. It is likely corrupt or missing."
+      action: "Review the AlertManager configuration, check the AlertManager logs and status page for errors."
+
+  - alert: PrometheusAlertmanagerConfigNotSynced
+    expr: count(count_values("config_hash", alertmanager_config_hash)) > 1
+    for: ${alert_timing_fast}
+    labels:
+      severity: warning
+      category: shared-services
+    annotations:
+      summary: Prometheus AlertManager config not synced
+      description: "Configurations of AlertManager cluster instances are out of sync."
+      action: "Check AlertManager logs for possible errors, and try to restart the containers."
+
+  - alert: PrometheusNotConnectedToAlertmanager
+    expr: prometheus_notifications_alertmanagers_discovered < 1
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Prometheus not connected to AlertManager
+      description: "Prometheus should be connected to at least one AlertManager at all times."
+      action: "Check whether the AlertManager endpoint is correctly configured in Prometheus. Investigate why Prometheus cannot connect to the AlertManager."
+
+  - alert: PrometheusRuleEvaluationFailures
+    expr: increase(prometheus_rule_evaluation_failures_total[3m]) > 0
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Prometheus rule evaluation failures
+      description: "Prometheus encountered {{ printf \"%.2f\" $value }} rule evaluation failures, leading to potentially ignored alerts."
+      action: "This error can occur intermittently when data is missing in Prometheus. If this alert fires repeatedly or continuously, rewrite and fix the affected alert rule."
+
+  - alert: PrometheusTemplateTextExpansionFailures
+    expr: increase(prometheus_template_text_expansion_failures_total[3m]) > 0
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Prometheus template text expansion failures
+      description: "Prometheus encountered {{ printf \"%.2f\" $value }} template text expansion failures"
+      action: "Rewrite the affected alert definition, fix the templating clauses."
+
+  - alert: PrometheusRuleEvaluationSlow
+    expr: prometheus_rule_group_last_duration_seconds > prometheus_rule_group_interval_seconds
+    for: ${alert_timing_medium}
+    labels:
+      severity: warning
+      category: shared-services
+    annotations:
+      summary: Prometheus rule evaluation slow
+      description: "Prometheus rule evaluation took more time than the scheduled interval. It indicates a slower storage backend access or too complex query."
+      action: "Investigate whether the rule evaluation is too slow for our requirements. If so, simplify some alert rules, or investigate whether Prometheus' disk access is too slow. Otherwise, increase the alert rule evaluation interval."
+
+  - alert: PrometheusNotificationsBacklog
+    expr: min_over_time(prometheus_notifications_queue_length[10m]) > 0
+    for: ${alert_timing_medium}
+    labels:
+      severity: warning
+      category: shared-services
+    annotations:
+      summary: Prometheus notifications backlog
+      description: "The Prometheus notification queue has not been empty for 10 minutes. Alerts are triggered too frequently and cannot be delivered."
+      action: "Investigate the outstanding alerts, and the cause for the big number of alerts. Resolve the underlying issues, or otherwise disable or rewrite some alerts to trigger less frequently."
+
+  - alert: PrometheusAlertmanagerNotificationFailing
+    expr: rate(alertmanager_notifications_failed_total[1m]) > 0
+    for: ${alert_timing_medium}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Prometheus AlertManager notification failing
+      description: "Alertmanager is failing to send notifications, which could lead to ignored alerts."
+      action: "Review Alertmanager's alert receiver configuration, its logs and status page. Check the connectivity between the Alertmanager container and the affected alert receivers."
+
+  - alert: PrometheusTargetEmpty
+    expr: prometheus_sd_discovered_targets == 0
+    for: ${alert_timing_medium}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Prometheus target empty
+      description: "A Prometheus service discovery configuration did not discover any targets, which indicates a corrupt configuration."
+      action: "Review the Promehteus service discovery configuration, check for errors in the Prometheus logs, and the Prometheus status page."
+
+  - alert: PrometheusTargetScrapingSlow
+    expr: prometheus_target_interval_length_seconds{quantile="0.9"} / on (interval, instance, job) prometheus_target_interval_length_seconds{quantile="0.5"} > 1.05
+    for: ${alert_timing_medium}
+    labels:
+      severity: warning
+      category: shared-services
+    annotations:
+      summary: Prometheus target scraping slow
+      description: "Prometheus is scraping exporters slowly since it exceeded the requested interval time. The Prometheus server is under-provisioned."
+      action: "Check the CPU and network usage of the Prometheus container. If possible, increase resources, or increase the scraping interval."
+
+  - alert: PrometheusLargeScrape
+    expr: increase(prometheus_target_scrapes_exceeded_sample_limit_total[10m]) > 10
+    for: ${alert_timing_medium}
+    labels:
+      severity: warning
+      category: shared-services
+    annotations:
+      summary: Prometheus large scrape
+      description: "Prometheus has many scrapes that exceed the sample limit, which might lead to heavy load on the Prometheus server, or dropped data."
+      action: "Check the scrape outputs of the affected exporters. Try to configure the exporters to split their data between multiple scrapes. Consider increasing Prometheus' sample_limit setting."
+
+  - alert: PrometheusTargetScrapeDuplicate
+    expr: increase(prometheus_target_scrapes_sample_duplicate_timestamp_total[5m]) > 0
+    for: ${alert_timing_fast}
+    labels:
+      severity: warning
+      category: shared-services
+    annotations:
+      summary: Prometheus target scrape duplicate
+      description: "Prometheus rejects samples due to duplicate timestamps but different values. Some exporters or scrape jobs might be misconfigured to result in identical label sets."
+      action: "Investigate the origin of the duplicated samples. Possibly some exporters are scraped multiple times, or are misconfigured."
+
+  - alert: PrometheusTsdbCheckpointCreationFailures
+    expr: increase(prometheus_tsdb_checkpoint_creations_failed_total[1m]) > 0
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Prometheus TSDB checkpoint creation failures
+      description: "Prometheus encountered {{ printf \"%.2f\" $value }} checkpoint creation failures, which might lead to data corruption, or indicate a full Prometheus disk."
+      action: "Make sure the Prometheus disk has sufficient free space, and Prometheus has proper access to the disk. Look for errors in the Prometheus logs and the status of the pod."
+
+  - alert: PrometheusTsdbCheckpointDeletionFailures
+    expr: increase(prometheus_tsdb_checkpoint_deletions_failed_total[1m]) > 0
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Prometheus TSDB checkpoint deletion failures
+      description: "Prometheus encountered {{ printf \"%.2f\" $value }} checkpoint deletion failures, which might indicate permission issues on the Prometheus disk."
+      action: "Make sure the Prometheus disk has sufficient free space, and Prometheus has proper access to the disk. Look for errors in the Prometheus logs and the status of the pod."
+
+  - alert: PrometheusTsdbCompactionsFailed
+    expr: increase(prometheus_tsdb_compactions_failed_total[1m]) > 0
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Prometheus TSDB compactions failed
+      description: "Prometheus encountered {{ printf \"%.2f\" $value }} TSDB compactions failures, which might indicate permission issues or a full Prometheus disk."
+      action: "Make sure the Prometheus disk has sufficient free space, and Prometheus has proper access to the disk. Look for errors in the Prometheus logs and the status of the pod."
+
+  - alert: PrometheusTsdbHeadTruncationsFailed
+    expr: increase(prometheus_tsdb_head_truncations_failed_total[1m]) > 0
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Prometheus TSDB head truncations failed
+      description: "Prometheus encountered {{ printf \"%.2f\" $value }} TSDB head truncation failures, which might indicate permission issues or a full Prometheus disk."
+      action: "Make sure the Prometheus disk has sufficient free space, and Prometheus has proper access to the disk. Look for errors in the Prometheus logs and the status of the pod."
+
+  - alert: PrometheusTsdbReloadFailures
+    expr: increase(prometheus_tsdb_reloads_failures_total[1m]) > 0
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Prometheus TSDB reload failures
+      description: "Prometheus encountered {{ printf \"%.2f\" $value }} TSDB reload failures, which might lead to lost data."
+      action: "Make sure the Prometheus disk has sufficient free space, and Prometheus has proper access to the disk. Look for errors in the Prometheus logs and the status of the pod."
+
+  - alert: PrometheusTsdbWalCorruptions
+    expr: increase(prometheus_tsdb_wal_corruptions_total[1m]) > 0
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Prometheus TSDB WAL corruptions
+      description: "Prometheus encountered {{ printf \"%.2f\" $value }} TSDB WAL corruptions, which might lead to lost data."
+      action: "Make sure the Prometheus disk has sufficient free space, and Prometheus has proper access to the disk. Look for errors in the Prometheus logs and the status of the pod."
+
+  - alert: PrometheusTsdbWalTruncationsFailed
+    expr: increase(prometheus_tsdb_wal_truncations_failed_total[1m]) > 0
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Prometheus TSDB WAL truncations failed
+      description: "Prometheus encountered {{ printf \"%.2f\" $value }} TSDB WAL truncation failures, which might indicate permission issues or a full Prometheus disk."
+      action: "Make sure the Prometheus disk has sufficient free space, and Prometheus has proper access to the disk. Look for errors in the Prometheus logs and the status of the pod."

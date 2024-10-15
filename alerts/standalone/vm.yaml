@@ -1,0 +1,17 @@
+groups:
+- name: "Standalone"
+  rules:
+
+  # Alert when standalone vms goes down
+  - alert: StandaloneVmDown
+    expr: up{job="standalone",instance =~ "az-vconf-rwone.*"} == 0
+    for: 1m
+    labels:
+      severity: moderate
+      category: service
+      assignee: IncidentManager
+    annotations:
+      summary: "Standalone VM is down ({{ $labels.instance }})"
+      description: "The Standalone VM with instance {{ $labels.instance }} is not responding."
+      action: "Login to the VM if running and check the status of instances and windows exporter. Start the VM is not running and then start game instances."
+

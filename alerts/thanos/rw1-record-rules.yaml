@@ -1,0 +1,45 @@
+
+# This file contains "record rules" - these are not alerts, but rather predefined queries
+# that can be accessed just like regular metrics. Similar mechanism to views in SQL databases.
+
+groups:
+- name: ds_pods_count
+  rules:
+  - record: rw1_free_ds_count
+    expr: |
+      sum(
+        (kube_pod_status_phase{pod=~"free-ds-pool-deployment-.*", phase="Running"} == 1)
+        + on(pod) group_left(label_status) (0 * kube_pod_labels{label_app="rw1-server", label_status="free"})
+      )
+      or on() vector(0)
+  - record: rw1_free_ds_count_diff
+    expr: rw1_free_ds_count - rw1_free_ds_count offset 15s
+  - record: rw1_occupied_ds_count
+    expr: |
+      sum(
+        (kube_pod_status_phase{pod=~"free-ds-pool-deployment-.*"}==1)
+        + on(pod) group_left(label_status) (0 * kube_pod_labels{label_app="rw1-server", label_status="occupied"})
+      ) or on() vector(0)
+  - record: rw1_occupied_ds_count_diff
+    expr: rw1_occupied_ds_count - rw1_occupied_ds_count offset 15s
+- name: ds_resources
+  rules:
+  - record: rw1_ds_count_per_node
+    expr: |
+      floor(
+        avg(kube_node_status_allocatable{node=~"aks-dspool-.*", resource="memory"})
+        /
+        avg(kube_pod_container_resource_requests{pod=~"free-ds-pool-deployment-.*", resource="memory"})
+      )
+      <
+      floor(
+        avg(kube_node_status_allocatable{node=~"aks-dspool-.*", resource="cpu"})
+        /
+        avg(kube_pod_container_resource_requests{pod=~"free-ds-pool-deployment-.*", resource="cpu"})
+      )
+      or
+      floor(
+        avg(kube_node_status_allocatable{node=~"aks-dspool-.*", resource="cpu"})
+        /
+        avg(kube_pod_container_resource_requests{pod=~"free-ds-pool-deployment-.*", resource="cpu"})
+      )

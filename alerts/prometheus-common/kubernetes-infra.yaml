@@ -1,0 +1,103 @@
+# Source: https://samber.github.io/awesome-prometheus-alerts/rules#kubernetes-1
+groups:
+- name: "KubernetesInfra"
+  rules:
+
+  - alert: KubernetesNodeNotReady
+    expr: kube_node_status_condition{condition="Ready", status="true"} == 0
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: infra
+    annotations:
+      summary: Kubernetes node not ready
+      description: "Node {{ $labels.node }} has been ready for a long time"
+      action: "Investigate the status of the Kubernetes cluster. It could help to reboot or simply delete the affected node."
+
+  - alert: KubernetesMemoryPressure
+    expr: kube_node_status_condition{condition="MemoryPressure", status="true"} == 1
+    for: ${alert_timing_slow}
+    labels:
+      severity: critical
+      category: infra
+    annotations:
+      summary: Memory pressure on Kubernetes node
+      description: "Node {{ $labels.node }} is in MemoryPressure condition"
+      action: "Increase the resources in the affected cluster, either by adding more nodes or increasing node resources."
+
+  - alert: KubernetesDiskPressure
+    expr: kube_node_status_condition{condition="DiskPressure", status="true"} == 1
+    for: ${alert_timing_slow}
+    labels:
+      severity: critical
+      category: infra
+    annotations:
+      summary: Disk pressure on Kubernetes node
+      description: "Node {{ $labels.node }} is in DiskPressure condition"
+      action: "Increase the resources in the affected cluster, either by adding more nodes or increasing node resources."
+
+  - alert: KubernetesNetworkUnavailable
+    expr: kube_node_status_condition{condition="NetworkUnavailable", status="true"} == 1
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: infra
+    annotations:
+      summary: Network unavailable on Kubernetes node
+      description: "Node {{ $labels.node }} is in NetworkUnavailable condition"
+      action: "Investigate and repair the network issue in the cluster. It could help to reboot the nodes, but the problem could also be with firewall/NSG configuration or cause by Azure."
+
+  - alert: KubernetesOutOfPodCapacity
+    expr: sum by (node) ((kube_pod_status_phase{phase="Running"} == 1) + on(uid) group_left(node) (0 * kube_pod_info{pod_template_hash=""})) / sum by (node) (kube_node_status_allocatable{resource="pods"}) * 100 > 90
+    for: ${alert_timing_fast}
+    labels:
+      severity: warning
+      category: infra
+    annotations:
+      summary: Kubernetes node out of pod capacity
+      description: "Node {{ $labels.node }} is close to its capacity for running pods (> 90%)"
+      action: "Increase the number of nodes in the Kubernetes cluster, or increase the maximum number of pods configured for nodes in this cluster."
+
+  - alert: KubernetesApiServerErrors
+    expr: sum(rate(apiserver_request_total{job="kubernetes-apiserver", code=~"^(?:5..)$"}[1m])) / sum(rate(apiserver_request_total{job="kubernetes-apiserver"}[1m])) * 100 > 3
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: infra
+    annotations:
+      summary: Kubernetes API server errors
+      description: "Kubernetes API server is experiencing high error rate"
+      action: "Investigate the cause of the errors by logging directly into the node VMs, or by troubleshooting in the Azure portal."
+
+  - alert: KubernetesApiClientErrors
+    expr: (sum(rate(rest_client_requests_total{code=~"(4|5).."}[1m])) by (instance, job) / sum(rate(rest_client_requests_total[1m])) by (instance, job)) * 100 > 1
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: infra
+    annotations:
+      summary: Kubernetes API client errors
+      description: "Kubernetes API client is experiencing high error rate"
+      action: "Investigate the cause of the errors by logging directly into the node VMs, or by troubleshooting in the Azure portal."
+
+  - alert: KubernetesClientCertificateExpiresNextWeek
+    expr: apiserver_client_certificate_expiration_seconds_count{job="kubernetes-apiserver"} > 0 and on (job) histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="kubernetes-apiserver"}[5m]))) < 7*24*60*60
+    for: ${alert_timing_fast}
+    labels:
+      severity: warning
+      category: infra
+    annotations:
+      summary: Kubernetes client certificate expires next week
+      description: "A client certificate used to authenticate to the apiserver is expiring next week."
+      action: "The client using this certificate as to download a new certificate."
+
+  - alert: KubernetesClientCertificateExpiresSoon
+    expr: apiserver_client_certificate_expiration_seconds_count{job="kubernetes-apiserver"} > 0 and on(job) histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="kubernetes-apiserver"}[5m]))) < 24*60*60
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: infra
+    annotations:
+      summary: Kubernetes client certificate expires soon
+      description: "A client certificate used to authenticate to the apiserver is expiring in less than 24.0 hours."
+      action: "The client using this certificate as to download a new certificate."

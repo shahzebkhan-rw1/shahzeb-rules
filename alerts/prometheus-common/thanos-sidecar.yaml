@@ -1,0 +1,47 @@
+groups:
+- name: thanos-sidecar
+  rules:
+
+  - alert: ThanosSidecarNoScrape
+    expr: absent(up{job="kubernetes-service-endpoints", kubernetes_service=~"prometheus-thanos-sidecar.+"} == 1)
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: ThanosSidecar has disappeared
+      description: "ThanosSidecar has disappeared. Prometheus target for the component cannot be discovered."
+      action: "Investigate why no Thanos Sidecar is scraped by Prometheus. Every Prometheus instance should be accompanied by a Thanos Sidecar container."
+
+  - alert: ThanosSidecarPrometheusDown
+    expr: thanos_sidecar_prometheus_up == 0
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Thanos Sidecar cannot connect to Prometheus
+      description: "Thanos Sidecar {{$labels.instance}} cannot connect to Prometheus."
+      action: "Check container status and logs of the Prometheus pod. Connectivity issues are not expected, so one of the containers or processes is down or overloaded. Restarting the Prometheus pod could help."
+
+  - alert: ThanosSidecarBucketOperationsFailed
+    expr: sum by (job, instance) (rate(thanos_objstore_bucket_operation_failures_total[5m])) > 0
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Thanos Sidecar bucket operations are failing
+      description: "Thanos Sidecar {{$labels.instance}} bucket operations are failing"
+      action: "Check the logs of the Thanos Sidecar container. There could be an issue with connecting to the storage backend, or an issue with credentials or permissions."
+
+  - alert: ThanosSidecarUnhealthy
+    expr: time() - max by (job, instance) (timestamp(thanos_sidecar_last_heartbeat_success_time_seconds)) >= 240
+    for: ${alert_timing_fast}
+    labels:
+      severity: critical
+      category: shared-services
+    annotations:
+      summary: Thanos Sidecar is unhealthy.
+      description: "Thanos Sidecar {{$labels.instance}} is unhealthy for more than {{$value}} seconds."
+      action: "Check whether the Thanos Sidecar container is running properly. Check the logs, restarting the pod could help."

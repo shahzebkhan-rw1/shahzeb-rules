@@ -1,0 +1,15 @@
+
+# This heatbeat alert is continuously sent to OpsGenie, which will notify when this is missing for too long
+groups:
+- name: "Heartbeat"
+  rules:
+  - alert: ThanosHeartbeat
+    expr: vector(1)
+    for: 0m
+    labels:
+      severity: critical
+      category: internal
+    annotations:
+      summary: Thanos Heartbeat Alert
+      description: "This alert fires continuously and is used by OpsGenie to ensure that all alerting components are operational."
+      action: "This alert should be treated specially and not appear in the list of regular alerts. If you see this alert in OpsGenie, check the alert routing configuration."
