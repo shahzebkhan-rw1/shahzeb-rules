@@ -26,6 +26,7 @@ metadata:
   name: prometheus-reload
   annotations:
     argocd.argoproj.io/sync-wave: "1"  # Job to reload Prometheus in sync wave 1
+    amespace: {{ .Values.namespace }}
 spec:
   template:
     metadata:
