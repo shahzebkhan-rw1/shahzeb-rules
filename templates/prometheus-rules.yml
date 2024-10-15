@@ -23,14 +23,12 @@ data:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  generateName: prometheus-reload
+  generateName: sync
   annotations:
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
 spec:
   template:
-    metadata:
-      name: prometheus-reload
     spec:
       containers:
         - name: curl
@@ -44,14 +42,12 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  generateName: prometheus-reload-post
+  generateName: postSync
   annotations:
     argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
 spec:
   template:
-    metadata:
-      name: prometheus-reload-post
     spec:
       containers:
         - name: curl
