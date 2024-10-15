@@ -26,8 +26,7 @@ metadata:
   name: prometheus-reload
   namespace: {{ .Values.namespace }}
   annotations:
-    argocd.argoproj.io/hook: PostSync
-    argocd.argoproj.io/sync-wave: "1"
+     "helm.sh/hook": post-install
 spec:
   template:
     metadata:
