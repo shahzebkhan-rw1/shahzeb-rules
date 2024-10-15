@@ -4,7 +4,7 @@ metadata:
   name: {{ .Values.alertConfigName }}
   namespace: {{ .Values.namespace }}
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-wave: "1"
 data:
   {{- $medium := .Values.alert_timing_medium }}
   {{- $slow := .Values.alert_timing_slow }}
@@ -24,9 +24,9 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: prometheus-reload
+  namespace: {{ .Values.namespace }}
   annotations:
-    argocd.argoproj.io/sync-wave: "1"  # Job to reload Prometheus in sync wave 1
-    namespace: {{ .Values.namespace }}
+    argocd.argoproj.io/hook: PostSync
 spec:
   template:
     metadata:
