@@ -1,6 +1,6 @@
 ruleFilesDirectory:
 - alerts/standalone
-# - alerts/loki
+- alerts/loki
 # - alerts/prometheus-rw1
 # - alerts/thanos
 # - alerts/prometheus-common
