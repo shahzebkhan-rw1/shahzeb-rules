@@ -23,10 +23,10 @@ data:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: prometheus-reload
-  namespace: {{ .Values.namespace }}
+  generateName: prometheus-reload
   annotations:
-     "helm.sh/hook": post-install
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
 spec:
   template:
     metadata:
