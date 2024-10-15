@@ -38,8 +38,6 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
-              echo "Waiting for 20 seconds to ensure ConfigMap is applied..."
-              sleep 20
               curl -X POST http://prometheus-service.shahzeb-test.svc:9090/-/reload -v
       restartPolicy: Never
 ---
@@ -61,7 +59,5 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
-              echo "Waiting for 20 seconds to ensure ConfigMap is applied..."
-              sleep 20
               curl -X POST http://prometheus-service.shahzeb-test.svc:9090/-/reload -v
       restartPolicy: Never
