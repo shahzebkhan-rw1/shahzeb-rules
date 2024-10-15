@@ -3,6 +3,8 @@ kind: ConfigMap
 metadata:
   name: {{ .Values.alertConfigName }}
   namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 data:
   {{- $medium := .Values.alert_timing_medium }}
   {{- $slow := .Values.alert_timing_slow }}
