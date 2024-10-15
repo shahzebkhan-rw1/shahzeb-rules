@@ -4,7 +4,7 @@ metadata:
   name: {{ .Values.alertConfigName }}
   namespace: {{ .Values.namespace }}
   annotations:
-    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-wave: "0"
 data:
   {{- $medium := .Values.alert_timing_medium }}
   {{- $slow := .Values.alert_timing_slow }}
@@ -27,6 +27,7 @@ metadata:
   namespace: {{ .Values.namespace }}
   annotations:
     argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   template:
     metadata:
@@ -40,5 +41,5 @@ spec:
             - |
               echo "Waiting for 20 seconds to ensure ConfigMap is applied..."
               sleep 20
-              curl --retry 5 --retry-delay 10 -X POST http://prometheus-service.shahzeb-test.svc:9090/-/reload -v
+              curl -X POST http://prometheus-service.shahzeb-test.svc:9090/-/reload -v
       restartPolicy: Never
