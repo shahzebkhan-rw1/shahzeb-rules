@@ -42,3 +42,26 @@ spec:
               sleep 20
               curl -X POST http://prometheus-service.shahzeb-test.svc:9090/-/reload -v
       restartPolicy: Never
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: prometheus-reload-post
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    metadata:
+      name: prometheus-reload-post
+    spec:
+      containers:
+        - name: curl
+          image: curlimages/curl:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Waiting for 20 seconds to ensure ConfigMap is applied..."
+              sleep 20
+              curl -X POST http://prometheus-service.shahzeb-test.svc:9090/-/reload -v
+      restartPolicy: Never
