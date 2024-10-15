@@ -57,7 +57,7 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
-              echo "Waiting for 10 seconds to ensure ConfigMap is applied..."
-              sleep 10  # Optional delay
+              echo "Waiting for 30 seconds to ensure ConfigMap is applied..."
+              sleep 30  # Optional delay
               curl -X POST http://prometheus-service.shahzeb-test.svc:9090/-/reload -v
       restartPolicy: Never
