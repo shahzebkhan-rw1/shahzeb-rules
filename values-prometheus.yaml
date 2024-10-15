@@ -3,7 +3,7 @@ ruleFilesDirectory:
 # - alerts/loki
 # - alerts/prometheus-rw1
 # - alerts/thanos
-- alerts/prometheus-common
+# - alerts/prometheus-common
 namespace: shahzeb-test
 alertConfigName: prometheus-rules
 alert_timing_medium: 10m
