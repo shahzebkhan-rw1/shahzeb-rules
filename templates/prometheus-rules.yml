@@ -23,7 +23,7 @@ data:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  generateName: in-sync
+  generateName: sync
   annotations:
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
@@ -38,6 +38,7 @@ spec:
             - |
               curl -X POST http://prometheus-service.shahzeb-test.svc:9090/-/reload -v
       restartPolicy: Never
+---
 
 ---
 apiVersion: batch/v1
