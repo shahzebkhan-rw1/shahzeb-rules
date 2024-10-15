@@ -39,5 +39,5 @@ spec:
             - |
               echo "Waiting for 10 seconds to ensure ConfigMap is applied..."
               sleep 10
-              curl -X POST http://prometheus-service.monitoring.svc:9090/-/reload
+              curl -X POST http://prometheus-service.shahzeb-test.svc:9090/-/reload
       restartPolicy: Never
