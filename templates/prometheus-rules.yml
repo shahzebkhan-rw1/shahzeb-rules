@@ -26,7 +26,7 @@ metadata:
   name: prometheus-reload
   annotations:
     argocd.argoproj.io/sync-wave: "1"  # Job to reload Prometheus in sync wave 1
-    amespace: {{ .Values.namespace }}
+    namespace: {{ .Values.namespace }}
 spec:
   template:
     metadata:
@@ -40,5 +40,5 @@ spec:
             - |
               echo "Waiting for 10 seconds to ensure ConfigMap is applied..."
               sleep 10
-              curl -X POST http://prometheus-service.shahzeb-test.svc:9090/-/reload -v
+              curl --retry 5 --retry-delay 10 -X POST http://prometheus-service.shahzeb-test.svc:9090/-/reload -v
       restartPolicy: Never
