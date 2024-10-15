@@ -44,6 +44,6 @@ spec:
               curl --version
               echo "*******************************************************************************************************************************************"
               sleep 30
-              curl -X POST http://prometheus-service.shahzeb-test:9090/-/reload -v
+              curl -X POST http://prometheus-service.shahzeb-test.svc:9090/-/reload -v
           
       restartPolicy: Never  # Ensure the Job doesn't restart automatically
