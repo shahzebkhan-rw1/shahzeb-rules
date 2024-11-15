@@ -1,7 +1,0 @@
-ruleFilesDirectory:
-- alerts/loki
-namespace: loki-test
-alertConfigName: loki-alert-rules 
-alert_timing_medium: 10m
-alert_timing_slow: 15m
-alert_timing_fast: 5m
